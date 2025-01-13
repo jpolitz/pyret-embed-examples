@@ -12,6 +12,9 @@
   flex-basis: 50%;
   height: 40em;
 }
+.right iframe {
+  height: 40em;
+}
 .left {
   flex-basis: 30%;
 }
@@ -28,13 +31,24 @@
   </pre>
   </div>
   <div id="example1" class="right">
+  </div>
+</div>
 
+<div id="example2-container" class="example">
+  <div class="left">
+  <p>An example that populates the editor, then sends an interaction on demand</p>
+  <button id="example2-button">Send code to interactions</button>
+  <pre id="example2-code">
+  </pre>
+  </div>
+  <div id="example2" class="right">
   </div>
 </div>
 
 </body>
 <script src="api.js"></script>
 <script src="example1.js"></script>
+<script src="example2.js"></script>
 </html>
 
 

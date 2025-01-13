@@ -1,6 +1,6 @@
 
 async function example1() {
-  const iframeContainer = document.getElementById("example1-container");
+  const iframeContainer = document.getElementById("example1");
   const embed = await makeEmbed('basic1', iframeContainer);
 
   embed.sendReset({
@@ -13,6 +13,6 @@ async function example1() {
 
 window.addEventListener('load', example1);
 
-const codeContainer = document.getElementById("example1-code");
+let codeContainer = document.getElementById("example1-code");
 codeContainer.innerText = String(example1);
 
