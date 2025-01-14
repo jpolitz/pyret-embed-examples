@@ -1,3 +1,4 @@
+const CPO = "http://pyret-horizon.herokuapp.com/editor#controlled=true";
 
 function makeEmbed(id, container) {
   let messageNumber = 0;
@@ -33,8 +34,7 @@ function makeEmbed(id, container) {
     const change = {
       from: { line: 0, ch: 0 },
       to: { line: 0, ch: 0 },
-      text: [text],
-      removed: [""]
+      text: text
     };
     const payload = {
       protocol: 'pyret',
@@ -45,7 +45,6 @@ function makeEmbed(id, container) {
       state: { replContents: text, messageNumber }
     };
     frame.contentWindow.postMessage(payload, '*');
-    gainControl(frame);
   }
 
   function directPostMessage(frame, message) {
@@ -54,7 +53,7 @@ function makeEmbed(id, container) {
 
   const frame = document.createElement("iframe");
   frame.id = id;
-  frame.src = `https://pyret-vmt-dfb765867402.herokuapp.com/editor#controlled=true`;
+  frame.src = CPO;
   frame.width = "100%";
   container.appendChild(frame);
 
