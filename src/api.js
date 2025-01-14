@@ -1,4 +1,4 @@
-const CPO = "http://pyret-horizon.herokuapp.com/editor#controlled=true";
+const CPO = "https://pyret-horizon.herokuapp.com/editor#controlled=true";
 
 function makeEmbed(id, container) {
   let messageNumber = 0;
