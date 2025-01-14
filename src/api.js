@@ -1,5 +1,6 @@
 const CPO = "https://pyret-horizon.herokuapp.com/editor#controlled=true";
 //const CPO = "http://localhost:4999/editor#controlled=true";
+//const CPO = "https://pyret-vmt-dfb765867402.herokuapp.com/editor#controlled=true";
 
 function makeEmbed(id, container) {
   let messageNumber = 0;
@@ -16,7 +17,7 @@ function makeEmbed(id, container) {
     const payload = {
       data: {
         type: 'reset',
-        state: JSON.stringify(state)
+        state: typeof state === "string" ? state : JSON.stringify(state)
       },
       protocol: 'pyret'
     };
@@ -88,5 +89,3 @@ function makeEmbed(id, container) {
   }
   return promise;
 }
-
-
