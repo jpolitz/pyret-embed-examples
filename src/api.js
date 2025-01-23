@@ -4,6 +4,7 @@ const CPO = "https://pyret-horizon.herokuapp.com/editor#controlled=true";
 
 function makeEmbed(id, container) {
   let messageNumber = 0;
+  let currentState = null;
   function sendReset(frame, state) {
     if(!state) {
       state = {
@@ -14,6 +15,7 @@ function makeEmbed(id, container) {
       };
     }
     state.messageNumber = 0;
+    currentState = state;
     const payload = {
       data: {
         type: 'reset',
@@ -38,15 +40,48 @@ function makeEmbed(id, container) {
       to: { line: 0, ch: 0 },
       text: text
     };
+    currentState = { messageNumber, ...currentState, replContents: text };
     const payload = {
       protocol: 'pyret',
       data: {
         type: 'changeRepl',
         change: change
       },
-      state: { replContents: text, messageNumber }
+      state: currentState
     };
     frame.contentWindow.postMessage(payload, '*');
+  }
+
+  let resultCounter = 0;
+
+  function runInteractionResult(frame) {
+    const { promise, resolve, reject } = Promise.withResolvers();
+    messageNumber += 1;
+    const newInteractions = currentState.interactionsSinceLastRun.concat([currentState.replContents])
+    currentState = {
+        ...currentState,
+        messageNumber: messageNumber,
+        interactionsSinceLastRun: newInteractions,
+        replContents: "",
+    };
+    const payload = {
+      protocol: 'pyret',
+      data: {
+        type: 'runInteraction',
+        reportAnswer: 'interaction' + (++resultCounter)
+      },
+      state: currentState
+    };
+    frame.contentWindow.postMessage(payload, '*');
+    window.addEventListener('message', message => {
+      if(message.data.protocol !== 'pyret') { return; }
+      if(message.source !== frame.contentWindow) { return; }
+      const pyretMessage = message.data;
+      if(pyretMessage.data.type === 'interactionResult') {
+        resolve(pyretMessage.data.textResult);
+      }
+    });
+    return promise;
   }
 
   function directPostMessage(frame, message) {
@@ -76,7 +111,7 @@ function makeEmbed(id, container) {
       resolve(makeEmbedAPI(frame));
     }
     else {
-      messageNumber = pyretMessage.state.messageNumber;
+      currentState = pyretMessage.state;
     }
   });
   function makeEmbedAPI(frame) {
@@ -84,7 +119,8 @@ function makeEmbed(id, container) {
       sendReset: (state) => sendReset(frame, state),
       postMessage: (message) => directPostMessage(frame, message),
       getFrame: () => frame,
-      setInteractions: (text) => setInteractions(frame, text)
+      setInteractions: (text) => setInteractions(frame, text),
+      runInteractionResult: async () => await runInteractionResult(frame)
     }
   }
   return promise;
