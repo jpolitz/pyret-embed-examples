@@ -1,4 +1,4 @@
-const CPO = "https://pyret-horizon.herokuapp.com/editor#controlled=true";
+const CPO = "https://pyret-horizon.herokuapp.com/editor#controlled=true&footerStyle=hide&warnOnExit=false";
 //const CPO = "http://localhost:4999/editor#controlled=true";
 //const CPO = "https://pyret-vmt-dfb765867402.herokuapp.com/editor#controlled=true";
 
@@ -92,10 +92,14 @@ function makeEmbed(id, container) {
   frame.id = id;
   frame.src = CPO;
   frame.width = "100%";
+  frame.frameBorder = 0;
+  frame.style = "height: 100%; border: 0;";
   container.appendChild(frame);
 
   const { promise, resolve, reject } = Promise.withResolvers();
   setTimeout(() => reject(new Error("Timeout waiting for Pyret to load")), 60000);
+
+  const onChangeCallbacks = [];
 
   window.addEventListener('message', message => {
     if(message.data.protocol !== 'pyret') {
@@ -105,10 +109,14 @@ function makeEmbed(id, container) {
       return;
     }
     const pyretMessage = message.data;
-    if(pyretMessage.data.type === 'pyret-init') {
+    const typ = pyretMessage.data.type;
+    if(typ === 'pyret-init') {
       console.log("Sending gainControl", pyretMessage);
       gainControl(frame);
       resolve(makeEmbedAPI(frame));
+    }
+    else if(typ === "changeRepl" || typ === "change") {
+      onChangeCallbacks.forEach(cb => cb(pyretMessage));
     }
     else {
       currentState = pyretMessage.state;
@@ -120,7 +128,8 @@ function makeEmbed(id, container) {
       postMessage: (message) => directPostMessage(frame, message),
       getFrame: () => frame,
       setInteractions: (text) => setInteractions(frame, text),
-      runInteractionResult: async () => await runInteractionResult(frame)
+      runInteractionResult: async () => await runInteractionResult(frame),
+      onChange: (callback) => onChangeCallbacks.push(callback)
     }
   }
   return promise;
