@@ -18,7 +18,7 @@ async function example6() {
   const resultDiv = document.getElementById("example6-result");
   button.addEventListener('click', async () => {
     embed.runDefinitions();
-    embed.setInteractions("x");
+    embed.setInteractions("x\n1000\ncheck: 200 is x end\n");
     const result = await embed.runInteractionResult();
     console.log(result);
     if(result.indexOf("embed") !== -1) {
