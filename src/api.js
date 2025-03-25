@@ -1,5 +1,5 @@
-const CPO = "https://pyret-horizon.herokuapp.com/editor#controlled=true&footerStyle=hide&warnOnExit=false";
-//const CPO = "http://localhost:4999/editor#controlled=true";
+//const CPO = "https://pyret-horizon.herokuapp.com/editor#controlled=true&footerStyle=hide&warnOnExit=false";
+const CPO = "http://localhost:4999/editor#controlled=true&footerStyle=hide";
 //const CPO = "https://pyret-vmt-dfb765867402.herokuapp.com/editor#controlled=true";
 
 function makeEmbed(id, container) {
@@ -59,6 +59,18 @@ function makeEmbed(id, container) {
       protocol: 'pyret',
       data: {
         type: 'run'
+      },
+      state: currentState
+    };
+    frame.contentWindow.postMessage(payload, '*');
+  }
+
+  function clearInteractions(frame) {
+    messageNumber += 1;
+    const payload = {
+      protocol: 'pyret',
+      data: {
+        type: 'clearInteractions'
       },
       state: currentState
     };
@@ -144,7 +156,8 @@ function makeEmbed(id, container) {
       setInteractions: (text) => setInteractions(frame, text),
       runDefinitions: () => runDefinitions(frame),
       runInteractionResult: async () => await runInteractionResult(frame),
-      onChange: (callback) => onChangeCallbacks.push(callback)
+      onChange: (callback) => onChangeCallbacks.push(callback),
+      clearInteractions: () => clearInteractions(frame)
     }
   }
   return promise;
