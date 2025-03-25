@@ -40,12 +40,25 @@ function makeEmbed(id, container) {
       to: { line: 0, ch: 0 },
       text: text
     };
-    currentState = { messageNumber, ...currentState, replContents: text };
+    currentState = { ...currentState, messageNumber, replContents: text };
     const payload = {
       protocol: 'pyret',
       data: {
         type: 'changeRepl',
         change: change
+      },
+      state: currentState
+    };
+    frame.contentWindow.postMessage(payload, '*');
+  }
+
+  function runDefinitions(frame) {
+    messageNumber += 1;
+    currentState = { ...currentState, messageNumber, interactionsSinceLastRun: [], definitionsAtLastRun: currentState.editorContents };
+    const payload = {
+      protocol: 'pyret',
+      data: {
+        type: 'run'
       },
       state: currentState
     };
@@ -117,6 +130,7 @@ function makeEmbed(id, container) {
     }
     else if(typ === "changeRepl" || typ === "change") {
       onChangeCallbacks.forEach(cb => cb(pyretMessage));
+      currentState = pyretMessage.state;
     }
     else {
       currentState = pyretMessage.state;
@@ -128,6 +142,7 @@ function makeEmbed(id, container) {
       postMessage: (message) => directPostMessage(frame, message),
       getFrame: () => frame,
       setInteractions: (text) => setInteractions(frame, text),
+      runDefinitions: () => runDefinitions(frame),
       runInteractionResult: async () => await runInteractionResult(frame),
       onChange: (callback) => onChangeCallbacks.push(callback)
     }
