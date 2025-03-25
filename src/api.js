@@ -1,5 +1,5 @@
-//const CPO = "https://pyret-horizon.herokuapp.com/editor#controlled=true&footerStyle=hide&warnOnExit=false";
-const CPO = "http://localhost:4999/editor#controlled=true&footerStyle=hide";
+const CPO = "https://pyret-horizon.herokuapp.com/editor#controlled=true&footerStyle=hide&warnOnExit=false";
+//const CPO = "http://localhost:4999/editor#controlled=true&footerStyle=hide";
 //const CPO = "https://pyret-vmt-dfb765867402.herokuapp.com/editor#controlled=true";
 
 function makeEmbed(id, container) {
