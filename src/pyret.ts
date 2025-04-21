@@ -1,4 +1,4 @@
-const CPO = "https://pyret-horizon.herokuapp.com/editor#controlled=true&footerStyle=hide&warnOnExit=false";
+const CPO = "../build/web/editor.embed.html";
 
 type State = {
   definitionsAtLastRun: string,
