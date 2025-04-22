@@ -1,6 +1,6 @@
 const CPO = "../build/web/editor.embed.html";
 
-type State = {
+export type State = {
   definitionsAtLastRun: string,
   interactionsSinceLastRun: string[],
   editorContents: string,
@@ -8,7 +8,7 @@ type State = {
   messageNumber?: number
 }
 
-type API = {
+export type API = {
   sendReset: (state : State) => void,
   postMessage: (message : any) => void,
   getFrame: () => HTMLIFrameElement,
@@ -19,7 +19,7 @@ type API = {
   clearInteractions: () => void
 };
 
-function makeEmbed(id : string, container : HTMLElement, src?: string) : Promise<API>{
+export function makeEmbed(id : string, container : HTMLElement, src?: string) : Promise<API>{
   let messageNumber = 0;
   let currentState : State;
   function sendReset(frame, state) {
