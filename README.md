@@ -24,7 +24,7 @@ $ npm install --save git://github.com/jpolitz/pyret-embed-examples#main
       }
       example1();
       </script>
-```
+   ```
 See examples/ for more examples!
 
 ## Running Examples in This Repo
