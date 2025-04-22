@@ -27,6 +27,29 @@ $ npm install --save git://github.com/jpolitz/pyret-embed-examples#main
    ```
 See examples/ for more examples!
 
+## API
+
+```
+type State = {
+    definitionsAtLastRun: string;
+    interactionsSinceLastRun: string[];
+    editorContents: string;
+    replContents: string;
+    messageNumber?: number;
+};
+type API = {
+    sendReset: (state: State) => void;
+    postMessage: (message: any) => void;
+    getFrame: () => HTMLIFrameElement;
+    setInteractions: (text: string) => void;
+    runDefinitions: () => void;
+    runInteractionResult: () => Promise<any>;
+    onChange: (callback: ((msg: any) => void)) => void;
+    clearInteractions: () => void;
+};
+declare function makeEmbed(id: string, container: HTMLElement, src?: string): Promise<API>;
+```
+
 ## Running Examples in This Repo
 
 To see the examples in this repository:
