@@ -11,20 +11,21 @@ $ npm install --save git://github.com/jpolitz/pyret-embed-examples#main
       <script src="/dist/pyret.js"></script>
       <div id="example1" class="embed-container"></div>
       <script>
-async function example1() {
-  const iframeContainer = document.getElementById("example1");
-  const embed = await makeEmbed('basic1', iframeContainer, "/dist/build/web/editor.embed.html#hideFooter=true");
+  async function example1() {
+        const iframeContainer = document.getElementById("example1");
+        const embed = await makeEmbed('basic1', iframeContainer, "/dist/build/web/editor.embed.html#hideFooter=true");
 
-  embed.sendReset({
-    definitionsAtLastRun: "use context starter2024\n\n'Hello!'",
-    interactionsSinceLastRun: [],
-    editorContents: "use context starter2024\n\n'Hello!'",
-    replContents: ""
-  });
-}
-example1();
+        embed.sendReset({
+          definitionsAtLastRun: "use context starter2024\n\n'Hello!'",
+          interactionsSinceLastRun: [],
+          editorContents: "use context starter2024\n\n'Hello!'",
+          replContents: ""
+        });
+      }
+      example1();
       </script>
 ```
+See examples/ for more examples!
 
 ## Running Examples in This Repo
 
