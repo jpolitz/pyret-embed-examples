@@ -2,9 +2,12 @@
 
 ```
 $ npm install --save git://github.com/jpolitz/pyret-embed-examples#main
-# Copy node_modules/dist/ to where you serve static files
-# Note that all the Pyret stuff is set up to correctly work with relative paths internally. You just need to make sure the paths to pyret.js and editor.embed.html work from your source.
-# From your website:
+```
+
+- Copy `node_modules/dist/` to where you serve static files
+- Note that all the Pyret stuff is set up to correctly work with relative paths internally. You just need to make sure the paths to pyret.js and editor.embed.html work from your source.
+- From your website:
+- ```
       <script src="/dist/pyret.js"></script>
       <div id="example1" class="embed-container"></div>
       <script>
