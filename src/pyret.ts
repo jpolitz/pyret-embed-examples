@@ -1,4 +1,4 @@
-const CPO = "../build/web/editor.embed.html";
+const CPO = "https://pyret-horizon.herokuapp.com/editor";
 
 export type State = {
   definitionsAtLastRun: string,
@@ -19,7 +19,44 @@ export type API = {
   clearInteractions: () => void
 };
 
-export function makeEmbed(id : string, container : HTMLElement, src?: string) : Promise<API>{
+export type EmbedConfig = {
+  container: HTMLElement,
+  src?: string,
+  id?: string,
+  state?: State,
+  options: {
+    footerStyle?: 'hidden',
+    warnOnExit?: boolean,
+    hideDefinitions?: boolean,
+    hideInteractions?: boolean
+  }
+};
+
+const defaultOptions = {
+  footerStyle: 'hidden',
+  warnOnExit: false,
+  hideDefinitions: false,
+  hideInteractions: false
+};
+const defaultConfig = {
+  src: CPO,
+  state: false,
+  options: defaultOptions
+};
+
+export function makeEmbedConfig(config : EmbedConfig) : Promise<API> {
+  let mergedConfig = { ...defaultConfig, ...config };
+  let mergedOptions = { ...defaultConfig.options, ...config.options };
+  let { container, src } = mergedConfig;
+  let id = config.id || ("pyret-embed" + Math.floor(Math.random() * 1000000));
+  const fragment = `${mergedOptions.footerStyle ? `?footerStyle=${mergedOptions.footerStyle}` : ""}${mergedOptions.warnOnExit ? `&warnOnExit=${mergedOptions.warnOnExit}` : ""}${mergedOptions.hideDefinitions ? `&hideDefinitions=${mergedOptions.hideDefinitions}` : ""}${mergedOptions.hideInteractions ? `&hideInteractions=${mergedOptions.hideInteractions}` : ""}`;
+  if(src.indexOf("#") !== -1) {
+    src = src + "&" + fragment;
+  }
+  else {
+    src = src + "#" + fragment;
+  }
+
   let messageNumber = 0;
   let currentState : State;
   function sendReset(frame, state) {
@@ -130,10 +167,10 @@ export function makeEmbed(id : string, container : HTMLElement, src?: string) : 
   }
 
   const frame = document.createElement("iframe");
-  frame.id = id;
   frame.src = src || CPO;
   frame.style = "width: 100%; height: 100%; border: 0; display: block;";
   frame.width = "100%";
+  frame.id = id;
   frame.frameBorder = "0";
   container.appendChild(frame);
 
@@ -154,6 +191,9 @@ export function makeEmbed(id : string, container : HTMLElement, src?: string) : 
     if(typ === 'pyret-init') {
       console.log("Sending gainControl", pyretMessage);
       gainControl(frame);
+      if(mergedConfig.state) {
+        sendReset(frame, mergedConfig.state);
+      }
       resolve(makeEmbedAPI(frame));
     }
     else if(typ === "changeRepl" || typ === "change") {
@@ -177,4 +217,13 @@ export function makeEmbed(id : string, container : HTMLElement, src?: string) : 
     }
   }
   return promise;
+
+}
+
+export function makeEmbed(id : string, container : HTMLElement, src?: string) : Promise<API>{
+  return makeEmbedConfig({
+    container,
+    src,
+    options: {}
+  });
 }
