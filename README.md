@@ -8,9 +8,9 @@ $ npm install --save git://github.com/jpolitz/pyret-embed-examples#main
 - Note that all the Pyret stuff is set up to correctly work with relative paths internally. You just need to make sure the paths to pyret.js and editor.embed.html work from your source.
 - From your website:
 - ```
-      <script src="/dist/pyret.js"></script>
+      <script type="module" src="/dist/pyret.js"></script>
       <div id="example1" class="embed-container"></div>
-      <script>
+      <script type="module">
   async function example1() {
         const iframeContainer = document.getElementById("example1");
         const embed = await makeEmbed('basic1', iframeContainer, "/dist/build/web/editor.embed.html#hideFooter=true");
