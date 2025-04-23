@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
         "target": "es2024",
-        "module": "CommonJS",
+        "module": "umd",
         "lib": ["dom", "es2024"],
         "declaration": true,
         "declarationDir": "./types",
