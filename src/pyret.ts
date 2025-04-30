@@ -68,7 +68,9 @@ export function makeEmbedConfig(config : EmbedConfig) : Promise<API> {
         replContents: ""
       };
     }
-    state.messageNumber = 0;
+    if(typeof state === "object") {
+      state.messageNumber = 0;
+    }
     currentState = state;
     const payload = {
       data: {
@@ -166,13 +168,53 @@ export function makeEmbedConfig(config : EmbedConfig) : Promise<API> {
     frame.contentWindow.postMessage(message);
   }
 
-  const frame = document.createElement("iframe");
-  frame.src = src || CPO;
-  frame.style = "width: 100%; height: 100%; border: 0; display: block;";
-  frame.width = "100%";
-  frame.id = id;
-  frame.frameBorder = "0";
-  container.appendChild(frame);
+  /* An issue we run into with iframes and scrolling is that CPO wants to scroll
+     interactions around sometimes. However, scrolling elements in the iframe
+     can scroll the outer page as well to focus it. We don't want that.
+     We can prevent this by making the iframe position: fixed, but that makes
+     sensible positioning hard. So we create a wrapper iframe that works in the
+     normal flow, and make the actual CPO iframe inside that.
+
+     Since CPO only knows how to postMessage to its immediate parent, we also
+     proxy all requests through the wrapper, and that's what the client sees.
+  */
+
+  const wrapper = document.createElement("iframe");
+  wrapper.style = "width: 100%; height: 100%; border: 0; display: block;";
+
+  wrapper.srcdoc = `
+<html>
+<head>
+<style>
+html, body { height: 100%; }
+</style>
+<script>
+window.addEventListener('message', (e) => {
+  if (e.source === window.parent) {
+    const iframes = document.getElementsByTagName("iframe");
+    iframes[0].contentWindow.postMessage(e.data, "*");
+  }
+  else {
+    window.parent.postMessage(e.data, "*");
+  }
+});
+</script>
+<body></body>
+</html>`;
+  container.appendChild(wrapper);
+  wrapper.addEventListener("load", () => {
+    const wrapperBody = wrapper.contentDocument.body;
+
+    const inner = document.createElement("iframe");
+    inner.src = src || CPO;
+    inner.style = "width: 100%; height: 100%; border: 0; display: block; position: fixed;";
+    inner.width = "100%";
+    inner.id = id;
+    inner.frameBorder = "0";
+
+    wrapperBody.appendChild(inner);
+  });
+  const frame = wrapper;
 
   const { promise, resolve, reject } = Promise.withResolvers<API>();
   setTimeout(() => reject(new Error("Timeout waiting for Pyret to load")), 60000);
@@ -221,9 +263,11 @@ export function makeEmbedConfig(config : EmbedConfig) : Promise<API> {
 }
 
 export function makeEmbed(id : string, container : HTMLElement, src?: string) : Promise<API>{
-  return makeEmbedConfig({
+  const config : EmbedConfig = {
     container,
-    src,
-    options: {}
-  });
+    id,
+    options: { }
+  };
+  if(src) { config.src = src; }
+  return makeEmbedConfig(config);
 }
