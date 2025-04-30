@@ -187,6 +187,7 @@ export function makeEmbedConfig(config : EmbedConfig) : Promise<API> {
 <head>
 <style>
 html, body { height: 100%; }
+body { margin: 0; padding: 0; }
 </style>
 <script>
 window.addEventListener('message', (e) => {
