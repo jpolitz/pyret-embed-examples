@@ -239,7 +239,9 @@ window.addEventListener('message', (e) => {
       if(mergedConfig.state) {
         sendReset(frame, mergedConfig.state);
       }
-      resolve(makeEmbedAPI(frame));
+      const api = makeEmbedAPI(frame);
+      (frame as any).pyretEmbed = api;
+      resolve(api);
     }
     else if(typ === "changeRepl" || typ === "change") {
       onChangeCallbacks.forEach(cb => cb(pyretMessage));
