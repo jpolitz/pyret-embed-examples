@@ -46,6 +46,7 @@ type API = {
     runInteractionResult: () => Promise<any>;
     onChange: (callback: ((msg: any) => void)) => void;
     clearInteractions: () => void;
+    currentState: () => State;
 };
 declare function makeEmbed(id: string, container: HTMLElement, src?: string): Promise<API>;
 ```
