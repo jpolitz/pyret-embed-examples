@@ -5,12 +5,19 @@
   "main": "dist/pyret.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "install": "tsc"
+    "install": "tsc",
+    "post-install": "npm run copy-pyret",
+    "prepublish": "cp -r node_modules/code.pyret.org/build dist/"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "mustache": "^4.2.0",
     "typescript": "^5.8.3"
+  },
+  "devDependencies": {
+    "code.pyret.org": "github:brownplt/code.pyret.org#horizon",
+    "webpack-cli": "^6.0.1"
   }
+
 }

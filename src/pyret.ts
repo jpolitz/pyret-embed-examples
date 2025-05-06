@@ -10,13 +10,14 @@ export type State = {
 
 export type API = {
   sendReset: (state : State) => void,
+  currentState: () => State,
   postMessage: (message : any) => void,
   getFrame: () => HTMLIFrameElement,
   setInteractions: (text : string) => void,
   runDefinitions: () => void,
   runInteractionResult: () => Promise<any>,
   onChange: (callback : ((msg : any) => void)) => void,
-  clearInteractions: () => void
+  clearInteractions: () => void,
 };
 
 export type EmbedConfig = {
@@ -256,7 +257,8 @@ window.addEventListener('message', (e) => {
       runDefinitions: () => runDefinitions(frame),
       runInteractionResult: async () => await runInteractionResult(frame),
       onChange: (callback : ((msg : any) => void)) => onChangeCallbacks.push(callback),
-      clearInteractions: () => clearInteractions(frame)
+      clearInteractions: () => clearInteractions(frame),
+      currentState: () => currentState,
     }
   }
   return promise;
