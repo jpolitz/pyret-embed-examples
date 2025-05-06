@@ -217,6 +217,7 @@ window.addEventListener('message', (e) => {
     wrapperBody.appendChild(inner);
   });
   const frame = wrapper;
+  frame.id = id;
 
   const { promise, resolve, reject } = Promise.withResolvers<API>();
   setTimeout(() => reject(new Error("Timeout waiting for Pyret to load")), 60000);
