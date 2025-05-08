@@ -234,7 +234,6 @@ window.addEventListener('message', (e) => {
     const pyretMessage = message.data;
     const typ = pyretMessage.data.type;
     if(typ === 'pyret-init') {
-      console.log("Sending gainControl", pyretMessage);
       gainControl(frame);
       if(mergedConfig.state) {
         sendReset(frame, mergedConfig.state);
