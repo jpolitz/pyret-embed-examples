@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "install": "tsc",
     "post-install": "npm run copy-pyret",
-    "prepublish": "cp -r node_modules/code.pyret.org/build dist/"
+    "copy-pyret": "cp -r node_modules/code.pyret.org/build dist/"
   },
   "author": "",
   "license": "ISC",
