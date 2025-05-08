@@ -5,7 +5,7 @@
   "main": "dist/pyret.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "install": "tsc",
+    "install": "tsc; cd node_modules/code.pyret.org; make link-pyret; npm run build",
     "post-install": "npm run copy-pyret",
     "copy-pyret": "cp -r node_modules/code.pyret.org/build dist/"
   },
