@@ -3,10 +3,13 @@
   "version": "0.0.1",
   "description": "A library for embedding Pyret into webpages",
   "main": "dist/pyret.js",
+  "files": [
+    "dist",
+    "types"
+  ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "install": "tsc; cd node_modules/code.pyret.org; make link-pyret; npm run build",
-    "post-install": "npm run copy-pyret",
+    "build": "tsc; cd node_modules/code.pyret.org; make link-pyret; npm run build; cd ../..; npm run copy-pyret",
     "copy-pyret": "cp -r node_modules/code.pyret.org/build dist/"
   },
   "author": "",
@@ -19,5 +22,4 @@
     "code.pyret.org": "github:brownplt/code.pyret.org#horizon",
     "webpack-cli": "^6.0.1"
   }
-
 }
