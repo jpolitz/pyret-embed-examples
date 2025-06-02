@@ -10,6 +10,10 @@
     },
     { "import-type": "dependency",
       protocol: "file",
+      args: ["../../../pyret/src/arr/compiler/locators/jsfile.arr"]
+    },
+    { "import-type": "dependency",
+      protocol: "file",
       args: ["../../../pyret/src/arr/compiler/repl.arr"]
     },
     { "import-type": "dependency",
@@ -42,6 +46,9 @@
     },
     { "import-type": "builtin",
       name: "cpo-builtins"
+    },
+    { "import-type": "builtin",
+      name: "filesystem-internal"
     }
   ],
   nativeRequires: [
@@ -58,8 +65,8 @@
     }
   },
   theModule: function(runtime, namespace, uri,
-                      compileLib, compileStructs, pyRepl, urlLoc, cpo, replUI, textHandlers,
-                      parsePyret, runtimeLib, loadLib, builtinModules, cpoBuiltins,
+                      compileLib, compileStructs, jsfile, pyRepl, urlLoc, cpo, replUI, textHandlers,
+                      parsePyret, runtimeLib, loadLib, builtinModules, cpoBuiltins, fsInternal,
                       gdriveLocators, fileLocator, http, cpoModules, _modalPrompt,
                       rtLib) {
 
@@ -141,6 +148,9 @@
     // NOTE(joe): this function just allocates a closure, so it's stack-safe
     var onCompile = gmf(cpo, "make-on-compile").app(runtime.makeFunction(saveGDriveCachedFile, "save-gdrive-cached-file"));
 
+    // NOTE(joe/ben): this function _used_ to be trivially stack safe, but files
+    // need to resolve their absolute path to calculate their URI, which
+    // requires an RPC, so this function is no-longer trivially flat
     function uriFromDependency(dependency) {
       return runtime.ffi.cases(gmf(compileStructs, "is-Dependency"), "Dependency", dependency,
         {
@@ -157,6 +167,18 @@
             }
             else if (protocol === "gdrive-js") {
               return "gdrive-js://" + arr[1];
+            }
+            else if (protocol === "js-file") {
+              if(!window.MESSAGES) {
+                console.error("Unknown import: ", dependency);
+                return protocol + "://" + arr.join(":");
+              }
+              return runtime.pauseStack((restarter) => {
+                const realpath = window.MESSAGES.sendRpc('path', 'resolve', [arr[0]]);
+                realpath.then((realpath) => {
+                  restarter.resume(`js-file://${realpath}`);
+                });
+              });
             }
             else if (protocol === "file") {
               if(!window.MESSAGES) {
@@ -182,7 +204,6 @@
             }
           }
         });
-
     }
 
     function makeFindModule(urlFileMode) {
@@ -190,101 +211,103 @@
       // interactions run
       var locatorCache = {};
       function findModule(contextIgnored, dependency) {
-        var uri = uriFromDependency(dependency);
-        if(locatorCache.hasOwnProperty(uri)) {
-          return gmf(compileLib, "located").app(locatorCache[uri], runtime.nothing);
-        }
-        return runtime.safeCall(function() {
-          return runtime.ffi.cases(gmf(compileStructs, "is-Dependency"), "Dependency", dependency,
-            {
-              builtin: function(name) {
-                var raw = cpoModules.getBuiltinLoadableName(runtime, name);
-                if(!raw) {
-                  throw runtime.throwMessageException("Unknown module: " + name);
-                }
-                else {
-                  return gmf(cpo, "make-builtin-js-locator").app(name, raw);
-                }
-              },
-              dependency: function(protocol, args) {
-                var arr = runtime.ffi.toArray(args);
-                if (protocol === "my-gdrive") {
-                  return constructors.makeMyGDriveLocator(arr[0]);
-                }
-                else if (protocol === "shared-gdrive") {
-                  return constructors.makeSharedGDriveLocator(arr[0], arr[1]);
-                }
-                else if (protocol === "gdrive-js") {
-                  return constructors.makeGDriveJSLocator(arr[0], arr[1]);
-                }
-                else if (protocol === "file" && window.MESSAGES) {
-                  var fileLocatorConstructor = fileLocator.makeFileLocatorConstructor(window.MESSAGES.sendRpc, runtime, compileLib, compileStructs, parsePyret, builtinModules, cpo);
-                  return fileLocatorConstructor.makeFileLocator(arr[0]);
-                }
-                else if (protocol === "url") {
-                  fetch(arr[0]).then(async (response) => {
-                    CPO.documents.set(arr[0], new CodeMirror.Doc(await response.text(), "pyret"));
-                  });
-                  return runtime.getField(runtime.getField(urlLoc, "values"), "url-locator").app(arr[0], replGlobals);
-                }
-                else if (protocol === "url-file") {
-                  const fullUrl = arr[0] + "/" + arr[1];
-                  switch(urlFileMode) {
-                    case "all-remote":
-                      fetch(fullUrl).then(async (response) => {
-                        CPO.documents.set(fullUrl, new CodeMirror.Doc(await response.text(), "pyret"));
-                      });
-                      return runtime.getField(runtime.getField(urlLoc, "values"), "url-locator").app(fullUrl, replGlobals);
-                    case "all-local":
-                      window.MESSAGES.sendRpc('fs', 'readFile', [fullUrl, 'utf8']).then((contents) => {
-                        CPO.documents.set(fullUrl, new CodeMirror.Doc(contents, "pyret"));
-                      });
-                      var fileLocatorConstructor = fileLocator.makeFileLocatorConstructor(window.MESSAGES.sendRpc, runtime, compileLib, compileStructs, parsePyret, builtinModules, cpo);
-                      return fileLocatorConstructor.makeFileLocator(arr[1]);
-                    case "local-if-present":
-                      return runtime.pauseStack(async (restarter) => {
-                        const exists = await window.MESSAGES.sendRpc('fs', 'exists', [arr[1]]);
-                        if(exists) {
-                          window.MESSAGES.sendRpc('fs', 'readFile', [fullUrl, 'utf8']).then((contents) => {
-                            CPO.documents.set(fullUrl, new CodeMirror.Doc(contents, "pyret"));
-                          });
-                          return runtime.runThunk(() => {
-                            var fileLocatorConstructor = fileLocator.makeFileLocatorConstructor(window.MESSAGES.sendRpc, runtime, compileLib, compileStructs, parsePyret, builtinModules, cpo);
-                            return fileLocatorConstructor.makeFileLocator(arr[1]);
-                          }, (result) => {
-                            if(runtime.isSuccessResult(result)) {
-                              restarter.resume(result.result);
-                            }
-                            else {
-                              restarter.error(result.error);
-                            }
-                          });
-                        }
-                        else {
-                          fetch(fullUrl).then(async (response) => {
-                            CPO.documents.set(fullUrl, new CodeMirror.Doc(await response.text(), "pyret"));
-                          });
-                          return restarter.resume(runtime.getField(runtime.getField(urlLoc, "values"), "url-locator").app(fullUrl, replGlobals));
-                        }
-                      });
+        return runtime.safeCall(() => {
+          return uriFromDependency(dependency);
+        }, function(uri) {
+          if(locatorCache.hasOwnProperty(uri)) {
+            return gmf(compileLib, "located").app(locatorCache[uri], runtime.nothing);
+          }
+          return runtime.safeCall(function() {
+            return runtime.ffi.cases(gmf(compileStructs, "is-Dependency"), "Dependency", dependency,
+              {
+                builtin: function(name) {
+                  var raw = cpoModules.getBuiltinLoadableName(runtime, name);
+                  if(!raw) {
+                    throw runtime.throwMessageException("Unknown module: " + name);
+                  }
+                  else {
+                    return gmf(cpo, "make-builtin-js-locator").app(name, raw);
+                  }
+                },
+                dependency: function(protocol, args) {
+                  var arr = runtime.ffi.toArray(args);
+                  if (protocol === "my-gdrive") {
+                    return constructors.makeMyGDriveLocator(arr[0]);
+                  }
+                  else if (protocol === "shared-gdrive") {
+                    return constructors.makeSharedGDriveLocator(arr[0], arr[1]);
+                  }
+                  else if (protocol === "gdrive-js") {
+                    return constructors.makeGDriveJSLocator(arr[0], arr[1]);
+                  }
+                  else if (protocol === "js-file" && window.MESSAGES) {
+                    return gmf(jsfile, "make-jsfile-locator").app(arr[0]);
+                  }
+                  else if (protocol === "file" && window.MESSAGES) {
+                    var fileLocatorConstructor = fileLocator.makeFileLocatorConstructor(window.MESSAGES.sendRpc, runtime, compileLib, compileStructs, parsePyret, builtinModules, cpo);
+                    return fileLocatorConstructor.makeFileLocator(arr[0]);
+                  }
+                  else if (protocol === "url") {
+                    fetch(arr[0]).then(async (response) => {
+                      CPO.documents.set(arr[0], new CodeMirror.Doc(await response.text(), "pyret"));
+                    });
+                    return runtime.getField(runtime.getField(urlLoc, "values"), "url-locator").app(arr[0], replGlobals);
+                  }
+                  else if (protocol === "url-file") {
+                    const fullUrl = arr[0] + "/" + arr[1];
+                    switch(urlFileMode) {
+                      case "all-remote":
+                        fetch(fullUrl).then(async (response) => {
+                          CPO.documents.set(fullUrl, new CodeMirror.Doc(await response.text(), "pyret"));
+                        });
+                        return runtime.getField(runtime.getField(urlLoc, "values"), "url-locator").app(fullUrl, replGlobals);
+                      case "all-local":
+                        fsInternal.readFile(fullUrl).then((contents) => {
+                          const strContents = Buffer.from(contents).toString('utf8');
+                          CPO.documents.set(fullUrl, new CodeMirror.Doc(strContents, "pyret"));
+                        });
+                        var fileLocatorConstructor = fileLocator.makeFileLocatorConstructor(window.MESSAGES.sendRpc, runtime, compileLib, compileStructs, parsePyret, builtinModules, cpo);
+                        return fileLocatorConstructor.makeFileLocator(arr[1]);
+                      case "local-if-present":
+                        return runtime.pauseStack(async (restarter) => {
+                          const exists = await window.MESSAGES.sendRpc('fs', 'exists', [arr[1]]);
+                          if(exists) {
+                            fsInternal.readFile(fullUrl).then((contents) => {
+                              const strContents = Buffer.from(contents).toString('utf8');
+                              CPO.documents.set(fullUrl, new CodeMirror.Doc(strContents, "pyret"));
+                            });
+                            return runtime.runThunk(() => {
+                              var fileLocatorConstructor = fileLocator.makeFileLocatorConstructor(window.MESSAGES.sendRpc, runtime, compileLib, compileStructs, parsePyret, builtinModules, cpo);
+                              return fileLocatorConstructor.makeFileLocator(arr[1]);
+                            }, (result) => {
+                              if(runtime.isSuccessResult(result)) {
+                                restarter.resume(result.result);
+                              }
+                              else {
+                                restarter.error(result.error);
+                              }
+                            });
+                          }
+                          else {
+                            fetch(fullUrl).then(async (response) => {
+                              CPO.documents.set(fullUrl, new CodeMirror.Doc(await response.text(), "pyret"));
+                            });
+                            return restarter.resume(runtime.getField(runtime.getField(urlLoc, "values"), "url-locator").app(fullUrl, replGlobals));
+                          }
+                        });
+                    }
+
+                  }
+                  else {
+                    throw runtime.throwMessageException("Unknown import: " + uri);
                   }
                 }
-                /*
-                else if (protocol === "js-http") {
-                  // TODO: THIS IS WRONG with the new locator system
-                  return http.getHttpImport(runtime, args[0]);
-                }
-                */
-                else {
-                  throw runtime.throwMessageException("Unknown import: " + uri);
-                }
-
-              }
             });
-         }, function(l) {
-            locatorCache[uri] = l;
-            return gmf(compileLib, "located").app(l, runtime.nothing);
-         }, "findModule");
+          }, function(l) {
+              locatorCache[uri] = l;
+              return gmf(compileLib, "located").app(l, runtime.nothing);
+          }, "findModule");
+        });
       }
       return runtime.makeFunction(findModule, "cpo-find-module");
     }
