@@ -20,13 +20,36 @@ export type API = {
   clearInteractions: () => void,
 };
 
+export type ReadFileOpts = { encoding?: string } | 'utf8';
+export type RPCFunctions = {
+  fs?: {
+    writeFile?: (p: string, buffer: Buffer) => Promise<void>,
+    readFile?: (p: string, opts: ReadFileOpts) => Promise<string | Uint8Array>,
+    stat?: (p: string) => Promise<{ mtime: number, ctime: number, size: number, native: any }>,
+    createDir?: (p: string) => Promise<void>
+  },
+  path?: {
+    join?: (...paths: string[]) => string,
+    resolve?: (p: string) => string,
+    basename?: (p: string) => string,
+    dirname?: (p: string) => string,
+    extname?: (p: string) => string,
+    relative?: (from: string, to: string) => string,
+    'is-absolute'?: (p: string) => boolean
+  },
+  process?: {
+    cwd?: () => string
+  }
+};
+
 export type EmbedConfig = {
   container: HTMLElement,
   src?: string,
   id?: string,
   state?: State,
+  rpc?: RPCFunctions,
   options: {
-    footerStyle?: 'hidden',
+    footerStyle?: 'hide' | 'normal',
     warnOnExit?: boolean,
     hideDefinitions?: boolean,
     hideInteractions?: boolean
@@ -34,7 +57,7 @@ export type EmbedConfig = {
 };
 
 const defaultOptions = {
-  footerStyle: 'hidden',
+  footerStyle: 'hide',
   warnOnExit: false,
   hideDefinitions: false,
   hideInteractions: false
@@ -45,13 +68,47 @@ const defaultConfig = {
   options: defaultOptions
 };
 
+type RPCResponse = { resultType: 'value', result: any, } | { resultType: 'exception', exception: any };
+
+function sendRpcResponse(frame : HTMLIFrameElement, data: { callbackId: string }, result: RPCResponse) {
+  frame.contentWindow!.postMessage({
+    protocol: 'pyret-rpc',
+    data: {
+      type: 'rpc-response',
+      callbackId: data.callbackId,
+      ...result
+    }
+  });
+}
+
+async function receiveRPC(frame : HTMLIFrameElement, e: MessageEvent, rpcs: RPCFunctions) : Promise<void> {
+  console.log("RPC:", e.data);
+  const data = e.data.data;
+  const module = (rpcs as any)[data.module];
+  if (!(module as any)[data.method]) {
+    sendRpcResponse(frame, data, { resultType: 'exception', exception: `Unknown method ${data.method}` });
+  }
+  else {
+    try {
+      const result = await (module as any)[data.method](...data.args);
+      sendRpcResponse(frame, data, { resultType: 'value', result });
+    } catch (exn) {
+      sendRpcResponse(frame, data, { resultType: 'exception', exception: String(exn) });
+    }
+    return;
+  }
+}
+
 export function makeEmbedConfig(config : EmbedConfig) : Promise<API> {
   let mergedConfig = { ...defaultConfig, ...config };
   let mergedOptions = { ...defaultConfig.options, ...config.options };
   let { container, src } = mergedConfig;
   let id = config.id || ("pyret-embed" + Math.floor(Math.random() * 1000000));
   const hasprop = (obj, prop) => Object.prototype.hasOwnProperty.call(obj, prop);
-  const fragment = `${hasprop(mergedOptions, "footerStyle") ? `?footerStyle=${mergedOptions.footerStyle}` : ""}${hasprop(mergedOptions, "warnOnExit") ? `&warnOnExit=${mergedOptions.warnOnExit}` : ""}${hasprop(mergedOptions, "hideDefinitions") ? `&hideDefinitions=${mergedOptions.hideDefinitions}` : ""}${hasprop(mergedOptions, "hideInteractions") ? `&hideInteractions=${mergedOptions.hideInteractions}` : ""}`;
+  console.log("Pyret embed config:", mergedConfig, mergedOptions);
+  const propIfTrue = (obj, prop) => { if(obj[prop] === true) { return `&${prop}=true`; } else { return ""; }};
+  const propIfPresent = (obj, prop) => { if(hasprop(obj, prop)) { return `&${prop}=${obj[prop]}`; } else { return ""; }};
+  const fragment = `${propIfPresent(mergedOptions, "footerStyle")}${propIfPresent(mergedOptions, "warnOnExit")}${propIfTrue(mergedOptions, "hideDefinitions")}${propIfTrue(mergedOptions, "hideInteractions")}`;
   if(src.indexOf("#") !== -1) {
     src = src + "&" + fragment;
   }
@@ -226,6 +283,12 @@ window.addEventListener('message', (e) => {
   const onChangeCallbacks = [];
 
   window.addEventListener('message', message => {
+    if(message.data.protocol === 'pyret-rpc') {
+      receiveRPC(frame, message, mergedConfig.rpc || {}).catch(exn => {
+        console.error("Error in RPC handler:", exn);
+      });
+      return;
+    }
     if(message.data.protocol !== 'pyret') {
       return;
     }

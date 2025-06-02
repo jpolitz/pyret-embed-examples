@@ -15,8 +15,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@zenfs/core": "^2.2.3",
     "mustache": "^4.2.0",
-    "typescript": "^5.8.3"
+    "ts-loader": "^9.5.2",
+    "typescript": "^5.8.3",
+    "webpack": "^5.99.9"
   },
   "devDependencies": {
     "code.pyret.org": "github:brownplt/code.pyret.org#horizon",
