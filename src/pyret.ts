@@ -50,7 +50,8 @@ export function makeEmbedConfig(config : EmbedConfig) : Promise<API> {
   let mergedOptions = { ...defaultConfig.options, ...config.options };
   let { container, src } = mergedConfig;
   let id = config.id || ("pyret-embed" + Math.floor(Math.random() * 1000000));
-  const fragment = `${mergedOptions.footerStyle ? `?footerStyle=${mergedOptions.footerStyle}` : ""}${mergedOptions.warnOnExit ? `&warnOnExit=${mergedOptions.warnOnExit}` : ""}${mergedOptions.hideDefinitions ? `&hideDefinitions=${mergedOptions.hideDefinitions}` : ""}${mergedOptions.hideInteractions ? `&hideInteractions=${mergedOptions.hideInteractions}` : ""}`;
+  const hasprop = (obj, prop) => Object.prototype.hasOwnProperty.call(obj, prop);
+  const fragment = `${hasprop(mergedOptions, "footerStyle") ? `?footerStyle=${mergedOptions.footerStyle}` : ""}${hasprop(mergedOptions, "warnOnExit") ? `&warnOnExit=${mergedOptions.warnOnExit}` : ""}${hasprop(mergedOptions, "hideDefinitions") ? `&hideDefinitions=${mergedOptions.hideDefinitions}` : ""}${hasprop(mergedOptions, "hideInteractions") ? `&hideInteractions=${mergedOptions.hideInteractions}` : ""}`;
   if(src.indexOf("#") !== -1) {
     src = src + "&" + fragment;
   }
