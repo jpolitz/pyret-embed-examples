@@ -2,7 +2,7 @@ const path = require('path');
 
 module.exports = {
     mode: 'development',
-    entry: { 'pyret': './src/pyret.ts', 'inmem-rpc': './src/inmem-rpc.ts' },
+    entry: { 'pyret': './src/pyret.ts', 'default-rpcs': './src/default-rpcs.ts' },
     module: {
         rules: [
             {
@@ -15,7 +15,8 @@ module.exports = {
     resolve: {
         extensions: ['.ts', '.js'],
         fallback: {
-            'fs': require.resolve('@zenfs/core')
+            'fs': require.resolve('@zenfs/core'),
+            'path': require.resolve('path-browserify')
         }
     },
     output: {

@@ -1,5 +1,5 @@
 import { makeEmbedConfig } from "../dist/pyret.js";
-import { rpc } from "../dist/inmem-rpc.js";
+import { rpc } from "../dist/default-rpcs.js";
 
 async function fsExample1() {
   const iframeContainer = document.getElementById("fs-example1");
