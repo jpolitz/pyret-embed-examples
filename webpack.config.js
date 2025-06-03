@@ -1,4 +1,5 @@
 const path = require('path');
+const webpack = require('webpack');
 
 module.exports = {
     mode: 'development',
@@ -24,6 +25,13 @@ module.exports = {
         libraryTarget: 'module',
         path: path.resolve(__dirname, 'dist')
     },
+    plugins: [
+        new webpack.ProvidePlugin({
+            // Make a global `process` variable that points to the `process` package,
+            // Thanks to https://stackoverflow.com/a/65018686/14239942
+            process: 'process/browser'
+        })
+    ],
     experiments: {
         outputModule: true,
     }
