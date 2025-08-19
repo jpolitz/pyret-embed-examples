@@ -1,6 +1,6 @@
 ## Installation and Use
 
-- Copy `node_modules/dist/` to where you serve static files
+- Copy `node_modules/pyret-embed/dist/` to where you serve static files
 - Note that all the Pyret stuff is set up to correctly work with relative paths
 internally. You just need to make sure the paths to pyret.js and
 editor.embed.html work from your source.
